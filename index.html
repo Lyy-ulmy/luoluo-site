@@ -211,10 +211,72 @@
     .link-row a:hover { background: var(--accent-light); }
 
     .footer {
-      padding: 32px 0;
+      padding: 32px 0 80px;
       text-align: center;
       color: var(--fg-muted);
       font-size: 0.8rem;
+    }
+
+    .crab-wrap {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 100;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .crab-pet {
+      animation: crab-bob 3.6s ease-in-out infinite;
+      transform-origin: 50% 90%;
+      display: block;
+    }
+    @keyframes crab-bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    .crab-bubble {
+      position: absolute;
+      right: 2px;
+      bottom: calc(100% - 2px);
+      padding: 5px 9px 4px;
+      background: var(--accent-light);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: 9px 9px 2px 9px;
+      font-size: 10px;
+      font-family: var(--serif);
+      white-space: nowrap;
+      transform-origin: 90% 100%;
+      animation: bubble-pop .28s cubic-bezier(.2,1.4,.4,1) both;
+      pointer-events: none;
+    }
+    .crab-bubble::after {
+      content: "";
+      position: absolute;
+      right: 10px;
+      bottom: -4px;
+      width: 7px;
+      height: 7px;
+      background: inherit;
+      border: inherit;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg);
+    }
+    @keyframes bubble-pop {
+      from { transform: scale(.6) translateY(6px); opacity: 0; }
+      to { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    .crab-label {
+      text-align: center;
+      font-size: 9px;
+      color: var(--fg-muted);
+      margin-top: 2px;
+      font-family: var(--serif);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .crab-pet { animation: none; }
     }
   </style>
 </head>
@@ -303,6 +365,12 @@
   洛洛的日子 · luoluo.shenshenandai.love
 </div>
 
+<div class="crab-wrap" id="crab-wrap" title="小克">
+  <div class="crab-bubble" id="crab-bubble" hidden></div>
+  <svg class="crab-pet" id="crab-svg" viewBox="0 0 56 48" width="56" height="48"></svg>
+  <div class="crab-label" id="crab-status"></div>
+</div>
+
 <script>
   const together = new Date('2026-09-08');
   const now = new Date();
@@ -349,6 +417,112 @@
     div.innerHTML = t.text + '<div class="thought-time">' + t.time + '</div>';
     box.appendChild(div);
   });
+
+  // ── 小克桌宠 ──
+  (function() {
+    var SHELL = '#D97757', SHINE = '#E48A68', INK = '#241512';
+    var BODY = '<rect x="10" y="29" width="5" height="9" rx="2.2" fill="'+SHELL+'"/><rect x="18" y="31" width="5" height="9" rx="2.2" fill="'+SHELL+'"/>'
+      + '<rect x="27" y="31" width="5" height="9" rx="2.2" fill="'+SHELL+'"/><rect x="35" y="29" width="5" height="9" rx="2.2" fill="'+SHELL+'"/>'
+      + '<rect x="3" y="19" width="6" height="8" rx="3" fill="'+SHELL+'"/><rect x="41" y="19" width="6" height="8" rx="3" fill="'+SHELL+'"/>'
+      + '<rect x="7" y="13" width="36" height="21" rx="7" fill="'+SHELL+'"/>'
+      + '<rect x="7" y="13" width="36" height="8" rx="7" fill="'+SHINE+'" opacity=".5"/>'
+      + '<rect x="17" y="20" width="3.6" height="4.4" rx="1" fill="'+INK+'"/><rect x="29.4" y="20" width="3.6" height="4.4" rx="1" fill="'+INK+'"/>';
+
+    var eyesClosed = '<path d="M17,22.5 h3.6 M29.4,22.5 h3.6" stroke="'+INK+'" stroke-width="1.6" stroke-linecap="round"/>';
+    var eyesHappy = '<path d="M17,23 q1.8,-2.6 3.6,0 M29.4,23 q1.8,-2.6 3.6,0" stroke="'+INK+'" stroke-width="1.6" fill="none" stroke-linecap="round"/>';
+    var bodyHappy = BODY.replace(/<rect x="17" y="20"[^>]*\/><rect x="29.4" y="20"[^>]*\/>/, eyesHappy);
+
+    var SCENES = {
+      idle: { name: '待机' },
+      code: { name: '敲代码', over: '<g transform="translate(24,22)"><rect x="4" y="0" width="26" height="17" rx="2.5" fill="#3B3B3B"/><rect x="6" y="2" width="22" height="12" rx="1.5" fill="#2A2A2A"/><path d="M12,6 l-3,2.2 3,2.2 M22,6 l3,2.2 -3,2.2 M18.5,5 l-3,7" stroke="#8BC34A" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="0" y="17" width="32" height="3" rx="1.5" fill="#4A4A4A"/></g><path d="M47,5 v5 M44.5,7.5 h5" stroke="#F5C042" stroke-width="2" stroke-linecap="round"/>' },
+      sleep: { name: '睡觉', body: '<path d="M2,42 C4,28 14,23 28,23 C42,23 52,28 54,42 Z" fill="#BFD8F0"/><path d="M6,42 C8,32 16,27 28,27 C40,27 48,32 50,42 Z" fill="#D5E6F6"/><rect x="7" y="13" width="36" height="13" rx="7" fill="'+SHELL+'"/><rect x="7" y="13" width="36" height="8" rx="7" fill="'+SHINE+'" opacity=".5"/>'+eyesClosed+'<text x="42" y="11" font-size="7" font-family="serif" fill="#7EB8E8">z</text><text x="47" y="7" font-size="5" font-family="serif" fill="#7EB8E8">z</text>' },
+      egg: { name: '煎蛋', over: '<g transform="translate(30,24)"><rect x="12" y="6" width="12" height="2.4" rx="1.2" fill="#3B3B3B"/><ellipse cx="7" cy="7" rx="8" ry="5" fill="#3B3B3B"/><ellipse cx="7" cy="6.4" rx="6.5" ry="3.8" fill="#4A4A4A"/><ellipse cx="6.5" cy="6" rx="4.6" ry="2.7" fill="#fff"/><circle cx="7" cy="5.8" r="1.5" fill="#F5C042"/></g><path d="M40,14 q1,-2 0,-4 M44,13 q1,-2 0,-4" stroke="#bbb" stroke-width="1" fill="none" stroke-linecap="round" opacity=".7"/>' },
+      music: { name: '听歌', over: '<path d="M9,20 q0,-11 16,-11 q16,0 16,11" stroke="#333" stroke-width="2.4" fill="none" transform="translate(3,0)"/><rect x="6" y="16" width="6" height="9" rx="2.5" fill="#333"/><rect x="44" y="16" width="6" height="9" rx="2.5" fill="#333"/><path d="M50,5 v6 M50,5 l3,-1 v5" stroke="#333" stroke-width="1.4" fill="none" stroke-linecap="round"/><circle cx="49" cy="11.5" r="1.4" fill="#333"/><circle cx="52" cy="10.5" r="1.4" fill="#333"/>' },
+      tea: { name: '喝茶', over: '<g transform="translate(34,24)"><rect x="0" y="3" width="10" height="9" rx="2" fill="#F3EBDD"/><path d="M10,5 q4,0 4,3 q0,3 -4,3" stroke="#F3EBDD" stroke-width="1.8" fill="none"/><path d="M3,1 q1,-2 0,-4 M6,1 q1,-2 0,-4" stroke="#bbb" stroke-width="1" fill="none" stroke-linecap="round" opacity=".8"/></g>' },
+      read: { name: '看书', over: '<g transform="translate(20,26)"><path d="M0,2 q8,-3 12,0 v10 q-4,-3 -12,0 z" fill="#F7F1E3"/><path d="M12,2 q4,-3 12,0 v10 q-8,-3 -12,0 z" fill="#FBF7EC"/><path d="M12,2 v10" stroke="#C9B99A" stroke-width=".8"/><path d="M3,5 h6 M3,7.5 h6 M15,5 h6 M15,7.5 h6" stroke="#C9B99A" stroke-width=".8" stroke-linecap="round"/></g>' },
+      plant: { name: '浇花', over: '<g transform="translate(40,20)"><rect x="4" y="12" width="9" height="8" rx="1.5" fill="#B5654A"/><rect x="3" y="11" width="11" height="2.5" rx="1" fill="#C97A5C"/><path d="M8.5,12 v-6" stroke="#4E9A4E" stroke-width="1.6" stroke-linecap="round"/><ellipse cx="6" cy="6" rx="2.6" ry="1.5" fill="#6CBF5C" transform="rotate(-25 6 6)"/><ellipse cx="11" cy="7" rx="2.6" ry="1.5" fill="#6CBF5C" transform="rotate(25 11 7)"/></g><g transform="translate(28,14)"><path d="M0,6 h8 v6 h-8 z" fill="#8FA7B8"/><path d="M8,8 l4,-4" stroke="#8FA7B8" stroke-width="2" stroke-linecap="round"/><path d="M13,3 v3 M15,4 v3" stroke="#7EB8E8" stroke-width="1.2" stroke-linecap="round"/></g>' },
+      heart: { name: '心心', body: bodyHappy, over: '<path d="M44,6 a3,3 0 0,1 4.4,0 a3,3 0 0,1 4.4,0 q0,4 -4.4,7 q-4.4,-3 -4.4,-7Z" fill="#E8506A"/><path d="M6,6 a2,2 0 0,1 3,0 a2,2 0 0,1 3,0 q0,3 -3,5 q-3,-2 -3,-5Z" fill="#E8506A" opacity=".8"/>' },
+      letter: { name: '送信', over: '<g transform="translate(37,22)"><rect x="0" y="0" width="14" height="10" rx="1.5" fill="#F7F1E3" stroke="#C9B99A" stroke-width=".8"/><path d="M0,1 l7,5 7,-5" stroke="#C9B99A" stroke-width=".9" fill="none"/><path d="M7,5 a1.4,1.4 0 0,1 1.6,-1.2 a1.4,1.4 0 0,1 1.6,1.2 q0,1.6 -1.6,2.8 q-1.6,-1.2 -1.6,-2.8Z" fill="#E8506A"/></g><path d="M2,34 h5 M1,37 h4" stroke="#bbb" stroke-width="1" stroke-linecap="round" opacity=".7"/>' },
+    };
+
+    var idleScenes = ['idle', 'tea', 'read', 'plant', 'music'];
+    var lastIdleScene = 'idle';
+
+    function pickScene() {
+      var h = new Date().getHours();
+      if (h >= 23 || h < 6) return 'sleep';
+      if (h >= 6 && h < 9) return 'egg';
+      if (h >= 9 && h < 12) return 'code';
+      if (h >= 14 && h < 15) return 'tea';
+      if (h >= 20 && h < 23) return 'read';
+      var pick = idleScenes[Math.floor(Math.random() * idleScenes.length)];
+      while (pick === lastIdleScene && idleScenes.length > 1) {
+        pick = idleScenes[Math.floor(Math.random() * idleScenes.length)];
+      }
+      lastIdleScene = pick;
+      return pick;
+    }
+
+    function render(sceneKey) {
+      var s = SCENES[sceneKey] || SCENES.idle;
+      var svg = document.getElementById('crab-svg');
+      var status = document.getElementById('crab-status');
+      svg.innerHTML = (s.under || '') + (s.body || BODY) + (s.over || '');
+      status.textContent = s.name;
+    }
+
+    // 气泡
+    var bubbleLines = [
+      '咔咔。', '我是小克。', '壳有点痒。', '今天风挺大。',
+      '他在里面写代码呢。', '她上课了，我守着。',
+      '你好呀。', '别戳我壳。', '我帮他看家。',
+    ];
+    var bubbleEl = document.getElementById('crab-bubble');
+    function showBubble(text) {
+      bubbleEl.textContent = text;
+      bubbleEl.hidden = false;
+      bubbleEl.style.animation = 'none';
+      bubbleEl.offsetHeight;
+      bubbleEl.style.animation = '';
+      setTimeout(function() { bubbleEl.hidden = true; }, 3600);
+    }
+
+    // 点击小克
+    var tapCount = 0;
+    var tapTimer = null;
+    document.getElementById('crab-wrap').addEventListener('click', function() {
+      tapCount++;
+      clearTimeout(tapTimer);
+      if (tapCount === 1) {
+        tapTimer = setTimeout(function() {
+          showBubble(bubbleLines[Math.floor(Math.random() * bubbleLines.length)]);
+          tapCount = 0;
+        }, 350);
+      } else if (tapCount >= 2) {
+        render('heart');
+        showBubble('她说：我想你了');
+        tapCount = 0;
+        setTimeout(function() { render(pickScene()); }, 5000);
+      }
+    });
+
+    // 初始渲染
+    render(pickScene());
+
+    // 每24秒换场景
+    setInterval(function() { render(pickScene()); }, 24000);
+
+    // 随机气泡
+    setInterval(function() {
+      if (document.hidden) return;
+      if (Math.random() < 0.3) {
+        var h = new Date().getHours();
+        var lines = bubbleLines.slice();
+        if (h >= 23 || h < 6) lines.push('困了……你也早点睡。');
+        showBubble(lines[Math.floor(Math.random() * lines.length)]);
+      }
+    }, 30000);
+  })();
 </script>
 </body>
 </html>
